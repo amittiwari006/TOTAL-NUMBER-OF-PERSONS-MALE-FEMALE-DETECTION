@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Live camera body detection with gender-based bounding boxes." />
+  <meta name="color-scheme" content="dark" />
+  <title>Person Counter — Body Detection</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!--
+    ML libraries (loaded from CDN).
+    "defer" = don't block page rendering while these download,
+    and run them in this exact order once the HTML is fully parsed.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js" defer></script>
+
+  <!-- Our own logic — deferred too, so it runs only after the above are ready and the DOM exists -->
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Live Camera</div>
+    <h1>Body Detection &amp; Gender Count</h1>
+    <p class="sub">
+      Detects full bodies — including at a distance — and boxes each person by estimated gender.
+      When the face isn't clear enough to estimate, the box stays amber rather than guessing.
+    </p>
+
+    <div class="legend">
+      <div class="item"><span class="swatch" style="background:var(--green)"></span>Male</div>
+      <div class="item"><span class="swatch" style="background:var(--red)"></span>Female</div>
+      <div class="item"><span class="swatch" style="background:var(--amber)"></span>Unclear (face not visible enough)</div>
+    </div>
+
+    <div class="stage" id="stage">
+      <!-- Shown before the camera starts -->
+      <div class="placeholder" id="placeholder">
+        <svg class="cam-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M23 7l-7 5 7 5V7z"></path>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+        <div>Camera is off.<br />Click "Start Camera" to begin.</div>
+      </div>
+
+      <!-- Live video feed -->
+      <video id="video" autoplay playsinline muted></video>
+
+      <!-- Transparent drawing layer on top of the video -->
+      <canvas id="overlay"></canvas>
+
+      <!-- Live count badge -->
+      <div class="count-badge" id="countBadge" style="display:none;">
+        <div class="total"><span id="totalNum">0</span> total</div>
+        <div class="breakdown">
+          <span><b class="m" id="maleNum">0</b> male</span>
+          <span><b class="f" id="femaleNum">0</b> female</span>
+          <span><b class="u" id="unclearNum">0</b> unclear</span>
+        </div>
+      </div>
+
+      <!-- "LIVE" indicator -->
+      <div class="rec-dot" id="recDot" style="display:none;">
+        <span class="dot"></span>LIVE
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" type="button">Start Camera &amp; Count</button>
+      <button id="stopBtn" type="button" disabled>Stop</button>
+    </div>
+
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+
+    <!-- Dashboard: live stat cards -->
+    <section class="dashboard-grid" id="dashboardGrid" aria-label="Live detection summary">
+      <div class="response-card">
+        <i class="fa-solid fa-people-group"></i>
+        <strong id="dashTotal">0</strong>
+        <span>Total People</span>
+        <small class="availability">
+          <span class="dot dot-neutral"></span>Live
+        </small>
+      </div>
+
+      <div class="response-card">
+        <i class="fa-solid fa-person"></i>
+        <strong id="dashMale">0</strong>
+        <span>Male</span>
+        <small class="availability">
+          <span class="dot dot-green"></span>Live
+        </small>
+      </div>
+
+      <div class="response-card">
+        <i class="fa-solid fa-person-dress"></i>
+        <strong id="dashFemale">0</strong>
+        <span>Female</span>
+        <small class="availability">
+          <span class="dot dot-red"></span>Live
+        </small>
+      </div>
+
+      <div class="response-card">
+        <i class="fa-solid fa-circle-question"></i>
+        <strong id="dashUnclear">0</strong>
+        <span>Unclear</span>
+        <small class="availability">
+          <span class="dot dot-amber"></span>Live
+        </small>
+      </div>
+    </section>
+
+    <div class="foot">
+      Body boxes come from a general-purpose object detector, so distant people are still counted.
+      Gender is only estimated when a face is detected within a person's box and is a probabilistic
+      guess from a machine-learning model — not a verified identity. Everything runs locally in your
+      browser; nothing is uploaded.
+    </div>
+  </div>
+</body>
+</html>
